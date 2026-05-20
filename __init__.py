@@ -1,9 +1,10 @@
 import random
 import logging
+from collections import defaultdict
 from typing import Dict, Union, ClassVar, Any, Mapping
 from BaseClasses import MultiWorld, Item, ItemClassification, Tutorial
 from worlds.AutoWorld import World, CollectionState, WebWorld
-from worlds.sly1.Items import item_table, create_itempool, create_item, event_item_pairs, sly_episodes
+from worlds.sly1.Items import item_table, create_itempool, create_item, event_item_pairs, sly_episodes, sly_items, bottles, junk_items
 from worlds.sly1.Locations import (get_location_names, get_total_locations,
                                    did_avoid_early_bk, generate_bottle_locations,
                                    generate_minigame_locations, generate_key_caches)
@@ -29,6 +30,58 @@ def run_client():
 components.append(
     Component("Sly 1 Client", func=run_client, component_type=Type.CLIENT)
 )
+
+def setup_item_groups() -> dict[str, set]:
+    item_groups = defaultdict(set)
+
+    n = 1
+    for item in bottles:
+        item_groups["Bottles"].add(item)
+        if 1 <= n <= 6:
+            item_groups["Tide of Terror Bottles"].add(item)
+        elif 7 <= n <= 11:
+            item_groups["Sunset Snake Eyes Bottles"].add(item)
+        elif 12 <= n <= 15:
+            item_groups["Vicious Voodoo Bottles"].add(item)
+        elif 16 <= n <= 19:
+            item_groups["Fire in the Sky Bottles"].add(item)
+        n += 1
+
+    n = 1
+    for item in junk_items:
+        if 1 <= n <= 2:
+            item_groups["Filler"].add(item)
+        elif 3 <= n <= 6:
+            item_groups["Traps"].add(item)
+        n += 1
+
+    for item in sly_episodes:
+        item_groups["Episode Access"].add(item)
+
+    n = 1
+    for item in sly_items:
+        if 1 <= n <= 10:
+            item_groups["Abilities"].add(item)
+        elif 11 <= n <= 14:
+            item_groups["Blueprints"].add(item)
+        elif 15 <= n <= 18:
+            item_groups["Keys"].add(item)
+        n += 1
+
+    item_groups["Tide of Terror"] = {"ToT Key", "ToT Blueprints", "Tide of Terror"}.union(
+        item_groups["Tide of Terror Bottles"])
+    item_groups["Sunset Snake Eyes"] = {"SSE Key", "SSE Blueprints", "Sunset Snake Eyes"}.union(
+        item_groups["Sunset Snake Eyes Bottles"])
+    item_groups["Vicious Voodoo"] = {"VV Key", "VV Blueprints", "Vicious Voodoo"}.union(
+        item_groups["Vicious Voodoo Bottles"])
+    item_groups["Fire in the Sky"] = {"FitS Key", "FitS Blueprints", "Fire in the Sky"}.union(
+        item_groups["Fire in the Sky Bottles"])
+
+    return item_groups
+
+def setup_location_groups() -> dict[str, set]:
+    location_groups = defaultdict(set)
+    return location_groups
 
 class Sly1Web(WebWorld):
     theme = "ocean"
@@ -63,6 +116,10 @@ class Sly1World(World):
     options = Sly1Options
     web = Sly1Web()
     settings: ClassVar[Sly1Settings]
+
+    # set up item and location groups
+    item_name_groups = setup_item_groups()
+    location_name_groups = setup_location_groups()
 
     # this is how we tell the Universal Tracker we want to use re_gen_passthrough
     @staticmethod
