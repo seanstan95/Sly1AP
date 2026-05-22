@@ -4,10 +4,11 @@ from collections import defaultdict
 from typing import Dict, Union, ClassVar, Any, Mapping
 from BaseClasses import MultiWorld, Item, ItemClassification, Tutorial
 from worlds.AutoWorld import World, CollectionState, WebWorld
-from worlds.sly1.Items import item_table, create_itempool, create_item, event_item_pairs, sly_episodes, sly_items, bottles, junk_items
+from worlds.sly1.Items import item_table, create_itempool, create_item, event_item_pairs, sly_episodes, sly_items, bottles, junk_items, ep_fix, lvl_to_ep
 from worlds.sly1.Locations import (get_location_names, get_total_locations,
                                    did_avoid_early_bk, generate_bottle_locations,
-                                   generate_minigame_locations, generate_key_caches)
+                                   generate_minigame_locations, generate_key_caches,
+                                   lvl_names, turrets, races, murray_dangers, minigames)
 from worlds.sly1.Options import Sly1Options
 from worlds.sly1.Regions import create_regions
 from worlds.sly1.Types import Sly1Item, EpisodeType, episode_type_to_name, episode_type_to_shortened_name
@@ -31,56 +32,93 @@ components.append(
     Component("Sly 1 Client", func=run_client, component_type=Type.CLIENT)
 )
 
-def setup_item_groups() -> dict[str, set]:
+def setup_item_groups(items) -> dict[str, set]:
+    # not quite as ugly as location groups (but still ugly). Would similarly be easier to deal with if item names were
+    #   formatted to allow for easier retrieval of level and/or episode names. Will try that after committing/pushing this
     item_groups = defaultdict(set)
+    for name in items:
+        if "Progressive" in name:
+            item_groups["Moves (Progressive)"].add(name)  # progressive moves
+            item_groups["Moves (All)"].add(name)  # all moves
+        if name in ["Coin Magnet", "Mine", "Fast", "Decoy", "Hacking"]:
+            item_groups["Moves (Non-Progressive)"].add(name)  # non-progressive moves
+            item_groups["Moves (All)"].add(name)  # all moves
+        if name in ["Charm", "1-Up"]:
+            item_groups["All Filler"].add(name)  # all filler
+        if name in ["Ice Physics Trap", "Speed Change Trap", "Ball Trap", "Invisibility Trap"]:
+            item_groups["All Traps"].add(name)  # all traps
 
-    n = 1
-    for item in bottles:
-        item_groups["Bottles"].add(item)
-        if 1 <= n <= 6:
-            item_groups["Tide of Terror Bottles"].add(item)
-        elif 7 <= n <= 11:
-            item_groups["Sunset Snake Eyes Bottles"].add(item)
-        elif 12 <= n <= 15:
-            item_groups["Vicious Voodoo Bottles"].add(item)
-        elif 16 <= n <= 19:
-            item_groups["Fire in the Sky Bottles"].add(item)
-        n += 1
+        # Bottles/blueprints/keys/episode access items need episode information. Problem: access items spell out episode
+        #   names while bottles/blueprints/keys don't. special case time :) have to convert episode name to its abbreviation
+        for ep in ep_fix:  # check all episodes
+            if name == ep:  # find which one
+                item_groups["All Episode Access Items"].add(name)  # all episode access
+                item_groups[f"{ep_fix[ep]} (All)"].add(name)  # individual episode (All) groups
+                break
 
-    n = 1
-    for item in junk_items:
-        if 1 <= n <= 2:
-            item_groups["Filler"].add(item)
-        elif 3 <= n <= 6:
-            item_groups["Traps"].add(item)
-        n += 1
+        if "Bottle" in name or "Blueprint" in name or "Key" in name:  # these 3 have same episode name format
+            for lvl in lvl_to_ep:  # cycle through all levels
+                if lvl in name:  # find which episode
+                    episode = lvl_to_ep[lvl]
+                    break
 
-    for item in sly_episodes:
-        item_groups["Episode Access"].add(item)
-
-    n = 1
-    for item in sly_items:
-        if 1 <= n <= 10:
-            item_groups["Abilities"].add(item)
-        elif 11 <= n <= 14:
-            item_groups["Blueprints"].add(item)
-        elif 15 <= n <= 18:
-            item_groups["Keys"].add(item)
-        n += 1
-
-    item_groups["Tide of Terror"] = {"ToT Key", "ToT Blueprints", "Tide of Terror"}.union(
-        item_groups["Tide of Terror Bottles"])
-    item_groups["Sunset Snake Eyes"] = {"SSE Key", "SSE Blueprints", "Sunset Snake Eyes"}.union(
-        item_groups["Sunset Snake Eyes Bottles"])
-    item_groups["Vicious Voodoo"] = {"VV Key", "VV Blueprints", "Vicious Voodoo"}.union(
-        item_groups["Vicious Voodoo Bottles"])
-    item_groups["Fire in the Sky"] = {"FitS Key", "FitS Blueprints", "Fire in the Sky"}.union(
-        item_groups["Fire in the Sky Bottles"])
-
+            # generalizing as a loop to cut out some repetitive lines
+            for group in ["Bottle", "Blueprint", "Key"]:
+                if group in name:
+                    item_groups[f"All {group}s"].add(name)  # all bottles, all blueprints, all keys
+                    item_groups[f"{episode} (All)"].add(name)  # ToT all, SSE all, VV all, FitS all
+                    if "Bottle" in name:
+                        item_groups[f"{episode} Bottles"].add(name)  # ToT bottles, SSE bottles, VV bottles, FitS bottles
     return item_groups
 
-def setup_location_groups() -> dict[str, set]:
+def setup_location_groups(locations) -> dict[str, set]:
     location_groups = defaultdict(set)
+    location_groups["All Bosses"] = {"Eye of the Storm", "Last Call", "Deadly Dance", "Flame Fu!"}
+
+    # My 2 CS degrees are screaming at me for this O(n^4) mess...I am in agony
+    # I don't think this can be majorly improved without significantly cutting back on groups or adjusting location name
+    #   format to "Stealthy Approach: Key" for a programmatically-easier time retrieving level names.
+    # Without that, there's basically no avoiding layers of loops going over locations -> episodes -> levels -> types of level locations
+    # Getting even this form working required a rename of minigame level caches to be "Minigame Cache" instead of just "Cache"
+    #   because I couldn't get a logically-sound approach working without doing so.
+    # Will probably make a version with modified location name formatting next to see if it's justified.
+    for name in locations:  # all locations
+        for episode in lvl_names:  # needed for episode-based groups
+            lvls = lvl_names[episode]
+            for lvl in lvls:  # needed for level-based groups
+                if lvl in name:  # find which level this location belongs to
+                    if lvl not in ["Eye of the Storm", "Last Call", "Deadly Dance", "Flame Fu!"] and lvl not in minigames:
+                        location_groups[f"{lvl} (All)"].add(name)  # all in each level
+                    location_groups[f"{episode} (All)"].add(name)  # all level matches in name -> part of current episode
+                    if any(thing in name for thing in murray_dangers):
+                        location_groups["All Murray Danger Levels"].add(name)  # murray danger levels
+                    if any(thing in name for thing in races):
+                        location_groups["All Race Levels"].add(name)  # race levels
+                    if any(thing in name for thing in turrets):
+                        location_groups["All Turret Levels"].add(name)  # turret levels
+                    if lvl not in minigames:
+                        location_groups["All Platforming Levels"].add(name)  # platforming levels
+
+                    for group in ["Bottle", "Key", "Minigame Cache", "Vault", "Hourglass"]:  # not strictly needed, but generalizing this into a loop cuts out some repetitive lines
+                        if group in name:  # find which type of location this is (Bottle, Cache, etc.)
+                            # could remove some slight repetitiveness here, but I really just do not care at this point, it works
+                            if "Vault" in name:
+                                location_groups[f"{episode} Vaults"].add(name)  # episode vaults
+                                location_groups["All Vaults"].add(name)  # all vaults
+
+                            if "Hourglass" in name:
+                                location_groups[f"{episode} Hourglasses"].add(name)  # episode hourglasses
+                                location_groups["All Hourglasses"].add(name)  # all hourglasses
+
+                            if "Bottle" in name or "Key" in name or "Minigame Cache" in name:
+                                location_groups[f"{episode} {group}s"].add(name)  # per-episode bottles/keys/minigame caches
+                                location_groups[f"All {group}s"].add(name)  # all bottles/keys/minigame caches
+
+                                # English words aren't descriptive enough to capture how long it took to get this part working
+                                if "Key" in name and lvl in minigames:
+                                    continue  # no individual level key groups for minigame keys
+                                else:
+                                    location_groups[f"{lvl} {group}s"].add(name)  # per-level bottles/keys/minigame caches
     return location_groups
 
 class Sly1Web(WebWorld):
@@ -118,8 +156,8 @@ class Sly1World(World):
     settings: ClassVar[Sly1Settings]
 
     # set up item and location groups
-    item_name_groups = setup_item_groups()
-    location_name_groups = setup_location_groups()
+    item_name_groups = setup_item_groups(item_name_to_id)
+    location_name_groups = setup_location_groups(location_name_to_id)
 
     # this is how we tell the Universal Tracker we want to use re_gen_passthrough
     @staticmethod

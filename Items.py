@@ -234,3 +234,15 @@ def from_id(item_id: int) -> ItemData:
         raise ValueError(f"No item data for item id '{item_id}'")
     assert len(matching) < 2, f"Multiple item data with id '{item_id}'. Please report."
     return matching[0]
+
+# these are used when generating item groups
+
+# sets up a dict that finds which episode an item belongs to based on level name
+lvl_to_ep = dict.fromkeys(["Stealthy Approach", "Into the Machine", "High Class Heist", "Fire Down Below", "Cunning Disguise", "Gunboat Graveyard", "ToT Blueprints", "ToT Key"], "ToT")
+lvl_to_ep.update(dict.fromkeys(["Rocky Start", "Boneyard Casino", "Straight to the Top", "Two to Tango", "Back Alley Heist", "SSE Blueprints", "SSE Key"], "SSE"))
+lvl_to_ep.update(dict.fromkeys(["Dread Swamp Path", "Lair of the Beast", "Grave Undertaking", "Descent into Danger", "VV Blueprints", "VV Key"], "VV"))
+lvl_to_ep.update(dict.fromkeys(["Perilous Ascent", "Flaming Temple of Flame", "Unseen Foe", "Duel by the Dragon", "FitS Blueprints", "FitS Key"], "FitS"))
+
+# some items spell out episode names, some abbreviate. Consistency for groups is important to me so, I settled for converting
+#   full spelling -> abbreviated. Inconsistent with my location groups, but I had trouble getting it to work the other way
+ep_fix = {"Tide of Terror": "ToT", "Sunset Snake Eyes": "SSE", "Vicious Voodoo": "VV", "Fire in the Sky": "FitS"}

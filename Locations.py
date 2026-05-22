@@ -89,7 +89,7 @@ def get_location_names() -> Dict[str, int]:
         base_name = name.removesuffix(" Key")
         for cache_number in range(1, 11):
             cache_code = data.ap_code + cache_number
-            cache_location_name = f"{base_name} Cache #{cache_number}"
+            cache_location_name = f"{base_name} Minigame Cache #{cache_number}"
             all_possible_minigame_locations[cache_location_name] = cache_code
 
     key_caches = {
@@ -302,6 +302,19 @@ bottle_amounts = {
     "Flaming Temple of Flame":  LevelData(10020930, "Flaming Temple of Flame", 25),
     "Unseen Foe":           LevelData(10020900, "Unseen Foe", 30),
     "Duel by the Dragon":       LevelData(10020955, "Duel by the Dragon", 40)
+}
+
+# these are all for use in location group setup to simplify things
+turrets = ["Treasure in the Depths", "Ghastly Voyage", "Rapid Fire Assault", "Piranha Lake"]
+races = ["At the Dog Track", "Desperate Race"]
+murray_dangers = ["Murray's Big Gamble", "King of the Hill"]
+minigames = turrets + races + murray_dangers + ["Down Home Cooking"]
+
+lvl_names = {
+        "Tide of Terror": ["Stealthy Approach", "Into the Machine", "High Class Heist", "Fire Down Below", "Cunning Disguise", "Gunboat Graveyard", "Treasure in the Depths", "Eye of the Storm"],
+        "Sunset Snake Eyes": ["Rocky Start", "Boneyard Casino", "Straight to the Top", "Two to Tango", "Back Alley Heist", "At the Dog Track", "Murray's Big Gamble", "Last Call"],
+        "Vicious Voodoo": ["Dread Swamp Path", "Lair of the Beast", "Grave Undertaking", "Descent into Danger", "Ghastly Voyage", "Down Home Cooking", "Piranha Lake", "Deadly Dance"],
+        "Fire in the Sky": ["Perilous Ascent", "Flaming Temple of Flame", "Unseen Foe", "Duel by the Dragon", "Desperate Race", "Rapid Fire Assault", "King of the Hill", "Flame Fu!"]
 }
 
 location_table = {
