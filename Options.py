@@ -57,7 +57,9 @@ class RequiredPages(Range):
 
 class StartingEpisode(Choice):
     """
-    Determines which episode you will have the intro for at the beginning of the game.
+    Determines which episode you will start in. You will be able to do the initial level for it, but
+    will only be able to continue if you receive a key for that episode (or unlock a different episode)
+    from a location within it. Avoid Early BK is suggested if you want to avoid early stuck points.
     """
     display_name = "Starting Episode"
     option_tide_of_terror = 1
@@ -93,7 +95,7 @@ class ExcludeMinigames(OptionSet):
     Crabs: Treasure in the Depths
     Races: At the Dog Track, A Desperate Race
     Turrets: Murray's Big Gamble, The King of the Hill
-    Hover Blasters: A Ghastly Voyage, Rapid Fire Assualt
+    Hover Blasters: A Ghastly Voyage, Rapid Fire Assault
     Chicken Killing: Down Home Cooking
     Swamp Skiff: Piranha Lake
     """
@@ -109,8 +111,9 @@ class ExcludeMinigames(OptionSet):
 
 class MinigameCaches(Range):
     """
-    Determines how many checks minigames send when completed. Ignored if the minigame is excluded.
-    Allows a range from 0-10.
+    Determines how many additional "minigame cache" checks that minigame levels send when completed.
+    Minigame levels will still have a key location even if this is set to 0.
+    This is ignored for any minigame levels excluded above. Allows a range from 0-10.
     """
     display_name = "Minigame Caches"
     range_start = 0
@@ -147,7 +150,7 @@ class CutsceneSkip(Toggle):
 
 class TrapChance(Range):
     """
-    Determines the chance for any junk item to become a trap.
+    Determines the chance for a filler item to become a trap.
     Set it to 0 for no traps.
     """
     display_name = "Include Traps"
