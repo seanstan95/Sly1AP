@@ -45,24 +45,33 @@ def set_rules(world: "Sly1World"):
              lambda state: state.has("Fire in the Sky: Key", player))
     
     # Hub 2 Access
+    tricks: list = options.EnableTricks.value
+    tot_second_half = True if "tot_second_half_early" in tricks else False
+    sse_second_half = True if "sse_second_half_early" in tricks else False
+    vv_second_half = True if "vv_second_half_early" in tricks else False
+    fits_second_half = True if "fits_second_half_early" in tricks else False
     add_rule(world.multiworld.get_entrance("Prowling the Grounds -> Prowling the Grounds - Second Gate", player),
-             lambda state: state.has("Tide of Terror: Key", player, 3))
+             lambda state: state.has("Tide of Terror: Key", player, 3) or tot_second_half)
     add_rule(world.multiworld.get_entrance("Muggshot's Turf -> Muggshot's Turf - Second Gate", player),
-             lambda state: state.has("Sunset Snake Eyes: Key", player, 3))
+             lambda state: state.has("Sunset Snake Eyes: Key", player, 3) or sse_second_half)
     add_rule(world.multiworld.get_entrance("Swamp's Dark Center -> Swamp's Dark Center - Second Gate", player),
-             lambda state: state.has("Vicious Voodoo: Key", player, 3))
+             lambda state: state.has("Vicious Voodoo: Key", player, 3) or vv_second_half)
     add_rule(world.multiworld.get_entrance("Inside the Stronghold -> Inside the Stronghold - Second Gate", player),
-             lambda state: state.has("Fire in the Sky: Key", player, 3))
+             lambda state: state.has("Fire in the Sky: Key", player, 3) or fits_second_half)
     
     # Boss Access
+    raleigh_early = True if "tot_raleigh_early" in tricks else False
+    muggshot_early = True if "sse_muggshot_early" in tricks else False
+    # no skip into Mz. Ruby early yet...some day...
+    panda_early = True if "fits_panda_early" in tricks else False
     add_rule(world.multiworld.get_entrance("Prowling the Grounds - Second Gate -> Eye of the Storm", player),
-             lambda state: state.has("Tide of Terror: Key", player, 7))
+             lambda state: state.has("Tide of Terror: Key", player, 7) or raleigh_early)
     add_rule(world.multiworld.get_entrance("Muggshot's Turf - Second Gate -> Last Call", player),
-             lambda state: state.has("Sunset Snake Eyes: Key", player, 7))
+             lambda state: state.has("Sunset Snake Eyes: Key", player, 7) or muggshot_early)
     add_rule(world.multiworld.get_entrance("Swamp's Dark Center - Second Gate -> Deadly Dance", player),
              lambda state: state.has("Vicious Voodoo: Key", player, 7))
     add_rule(world.multiworld.get_entrance("Inside the Stronghold - Second Gate -> Flame Fu!", player),
-             lambda state: state.has("Fire in the Sky: Key", player, 7))
+             lambda state: state.has("Fire in the Sky: Key", player, 7) or panda_early)
     
     # Cold Heart of Hate Access
     if options.UnlockClockwerk.value == 1:
@@ -105,12 +114,13 @@ def set_rules(world: "Sly1World"):
              lambda state: state.has("Progressive Invisibility", player, 1))
 
     # Extra rules for Unseen Foe
+    invis_skip = True if "unseen_foe_invis_skip" in world.options.EnableTricks.value else False
     add_rule(world.multiworld.get_location("Unseen Foe: Key", player),
-             lambda state: state.has("Progressive Invisibility", player, 1))
+             lambda state: state.has("Progressive Invisibility", player, 1) or invis_skip)
     add_rule(world.multiworld.get_location("Unseen Foe: Vault", player),
-             lambda state: state.has("Progressive Invisibility", player, 1))
+             lambda state: state.has("Progressive Invisibility", player, 1) or invis_skip)
     for location in world.multiworld.get_locations(player):
         if "Unseen Foe" in location.name and "Bottle" in location.name:
-            add_rule(location, lambda state: state.has("Progressive Invisibility", player, 1))
+            add_rule(location, lambda state: state.has("Progressive Invisibility", player, 1) or invis_skip)
 
     world.multiworld.completion_condition[player] = lambda state: state.has("Victory", player)

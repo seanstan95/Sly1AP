@@ -195,6 +195,27 @@ class BallTrapWeight(Range):
     range_end = 100
     default = 25
 
+class EnableTricks(OptionSet):
+    """
+    This option allows you to enable alternative forms of logic to access parts of the game via tricks.
+    Intended for use by people who know speedrun tricks already, but if you would like to learn, watch an
+    Any% run of the game for reference on how to do the below tricks.
+
+    Tide of Terror supports tot_second_half_early and tot_raleigh_early.
+    Sunset Snake Eyes supports sse_second_half_early and sse_muggshot_early.
+    Vicious Voodoo only supports vv_second_half early as Mz. Ruby does not have known methods of early access.
+    Fire in the Sky supports fits_second_half_early and fits_panda_early.
+    Additionally, an 8th trick unseen_foe_invis_skip is supported which puts all Unseen Foe locations into logic
+    without requiring any progressive invisibility items.
+
+    Including any of the tricks below will potentially require you to do those tricks to progress, depending
+    on the randomization.
+    """
+    display_name = "Enable Tricks"
+    default = []
+    valid_keys = ["tot_second_half_early", "tot_raleigh_early", "sse_second_half_early", "sse_muggshot_early"
+                  "vv_second_half_early", "fits_second_half_early", "fits_panda_early", "unseen_foe_invis_skip"]
+
 @dataclass
 class Sly1Options(PerGameCommonOptions):
     UnlockClockwerk:                UnlockClockwerk
@@ -210,6 +231,7 @@ class Sly1Options(PerGameCommonOptions):
     MinigameCaches:                 MinigameCaches
     LocationCluesanityBundleSize:   LocationCluesanityBundleSize
     ItemCluesanityBundleSize:       ItemCluesanityBundleSize
+    EnableTricks:                   EnableTricks
     CutsceneSkip:                   CutsceneSkip
     TrapChance:                     TrapChance
     IcePhysicsTrapWeight:           IcePhysicsTrapWeight
@@ -222,7 +244,7 @@ sly1_option_groups: Dict[str, List[Any]] = {
                          RequiredBosses, MaxPages,
                          RequiredPages, StartingEpisode,
                          IncludeHourglasses, HourglassesRequireRoll,
-                         CutsceneSkip],
+                         EnableTricks, CutsceneSkip],
     "Minigame Options": [ExcludeMinigames, MinigameCaches],
     "Cluesanity Options": [LocationCluesanityBundleSize, ItemCluesanityBundleSize],
     "Trap Options": [TrapChance, IcePhysicsTrapWeight,

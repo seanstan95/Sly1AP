@@ -169,6 +169,7 @@ class Sly1World(World):
                     self.options.StartingEpisode.value = slot_data["StartingEpisode"]
                     self.options.IncludeHourglasses.value = slot_data["IncludeHourglasses"]
                     self.options.HourglassesRequireRoll.value = slot_data["HourglassesRequireRoll"]
+                    self.options.EnableTricks.value = slot_data["EnableTricks"]
                     self.options.AvoidEarlyBK.value = slot_data["AvoidEarlyBK"]
                     self.options.ExcludeMinigames.value = slot_data["ExcludeMinigames"]
                     self.options.MinigameCaches.value = slot_data["MinigameCaches"]
@@ -263,6 +264,7 @@ class Sly1World(World):
             "IncludeHourglasses",
             "HourglassesRequireRoll",
             "AvoidEarlyBK",
+            "EnableTricks",
             "LocationCluesanityBundleSize",
             "ItemCluesanityBundleSize",
             "CutsceneSkip",
@@ -286,6 +288,7 @@ class Sly1World(World):
             "IncludeHourglasses": self.options.IncludeHourglasses.value,
             "HourglassesRequireRoll": self.options.HourglassesRequireRoll.value,
             "AvoidEarlyBK": self.options.AvoidEarlyBK.value,
+            "EnableTricks": self.options.EnableTricks.value,
             "LocationCluesanityBundleSize": self.options.LocationCluesanityBundleSize.value,
             "ItemCluesanityBundleSize": self.options.ItemCluesanityBundleSize.value,
             "CutsceneSkip": self.options.CutsceneSkip.value,
