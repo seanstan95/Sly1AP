@@ -8,7 +8,7 @@ from worlds.sly1.Items import item_table, create_itempool, create_item, event_it
 from worlds.sly1.Locations import (get_location_names, get_total_locations,
                                    did_avoid_early_bk, generate_bottle_locations,
                                    generate_minigame_locations, generate_key_caches,
-                                   loc_to_ep, minigames, lvl_lookup)
+                                   loc_to_ep, all_minigames, lvl_lookup)
 from worlds.sly1.Options import Sly1Options
 from worlds.sly1.Regions import create_regions
 from worlds.sly1.Types import Sly1Item, EpisodeType, episode_type_to_unlock
@@ -84,7 +84,7 @@ def setup_location_groups(locations) -> dict[str, set]:
         # doing this cuts out a ton of redundancy in lines of code because most groups are similar
         def helper(single, plural):  # singular and plural form of the group names. All because hourglasses pluralizes weirdly
             if single in loc_type:  # every location gets checked for if it's a bottle, key, etc. so only continue if there's a match
-                if single in ["Bottle", "Minigame Cache"] or (single == "Key" and level not in minigames):  # only do per-level key groups for non-minigames
+                if single in ["Bottle", "Minigame Cache"] or (single == "Key" and level not in all_minigames):  # only do per-level key groups for non-minigames
                     location_groups[f"{level} {plural}"].add(loc)
                 location_groups[f"{episode} {plural}"].add(loc)
                 location_groups[f"All {plural}"].add(loc)
@@ -97,7 +97,7 @@ def setup_location_groups(locations) -> dict[str, set]:
             if level in lvl_list:
                 location_groups[f"All {lvl_string} Levels"].add(loc)
 
-        if level not in minigames:  # minigame levels don't have enough diversity in locations to justify {level} (All) groups
+        if level not in all_minigames:  # minigame levels don't have enough diversity in locations to justify {level} (All) groups
             location_groups["All Platforming Levels"].add(loc)
             location_groups[f"{level} (All)"].add(loc)
     return location_groups

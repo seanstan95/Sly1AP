@@ -305,11 +305,11 @@ bottle_amounts = {
 }
 
 # these are all for use in location group setup to simplify things
-turrets = ["Treasure in the Depths", "Ghastly Voyage", "Rapid Fire Assault", "Piranha Lake"]
+sly_minigames = ["Treasure in the Depths", "Ghastly Voyage", "Rapid Fire Assault", "Piranha Lake", "Down Home Cooking"]
 races = ["At the Dog Track", "Desperate Race"]
 murray_dangers = ["Murray's Big Gamble", "King of the Hill"]
-minigames = turrets + races + murray_dangers + ["Down Home Cooking"]
-lvl_lookup = {"Race": races, "Murray Danger": murray_dangers, "Turret": turrets}
+all_minigames = sly_minigames + races + murray_dangers + ["Down Home Cooking"]
+lvl_lookup = {"Race": races, "Murray Danger": murray_dangers, "Sly Minigame": sly_minigames}
 
 loc_to_ep = dict.fromkeys(["Stealthy Approach", "Into the Machine", "High Class Heist", "Fire Down Below", "Cunning Disguise", "Gunboat Graveyard", "Treasure in the Depths"], "Tide of Terror")
 loc_to_ep.update(dict.fromkeys(["Rocky Start", "Boneyard Casino", "Straight to the Top", "Two to Tango", "Back Alley Heist", "Murray's Big Gamble", "At the Dog Track"], "Sunset Snake Eyes"))
