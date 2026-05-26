@@ -159,33 +159,33 @@ async def handle_checks(ctx: 'Sly1Context') -> None:
     for episode_index, (episode_name, level_list) in enumerate(LEVELS.items()):
         for level_index, level_name in enumerate(level_list):
             if ctx.level_keys[episode_index][level_index]:
-                location_name = f"{level_name} Key"
+                location_name = f"{level_name}: Key"
                 if location_name in location_table:
                     location_code = location_table[location_name].ap_code
                     if location_code not in ctx.locations_checked:
                         ctx.locations_checked.add(location_code)
                 # Minigame Caches
-                minigame_name = level_name + " Key"
+                minigame_name = level_name + ": Key"
                 if minigame_name in minigame_locations:
                     for i in range(1, 11):
                         location_code = minigame_locations[minigame_name].ap_code + i
                         if location_code not in ctx.locations_checked:
                             ctx.locations_checked.add(location_code)
                 # Key Caches
-                if level_name + " Key" in KEY_LOCATION_NAMES:
-                    key_index = KEY_LOCATION_NAMES.index(level_name + " Key")
+                if level_name + ": Key" in KEY_LOCATION_NAMES:
+                    key_index = KEY_LOCATION_NAMES.index(level_name + ": Key")
                     for i in range(10):
                         location_code = KEY_CACHE_BASE + (key_index * 10) + i
                         if location_code in ctx.server_locations and location_code not in ctx.locations_checked:
                             ctx.locations_checked.add(location_code)
             if ctx.vaults[episode_index][level_index]:
-                location_name = f"{level_name} Vault"
+                location_name = f"{level_name}: Vault"
                 if location_name in location_table:
                     location_code = location_table[location_name].ap_code
                     if location_code not in ctx.locations_checked:
                         ctx.locations_checked.add(location_code)
             if ctx.hourglasses[episode_index][level_index]:
-                location_name = f"{level_name} Hourglass"
+                location_name = f"{level_name}: Hourglass"
                 if location_name in location_table:
                     location_code = location_table[location_name].ap_code
                     if location_code not in ctx.locations_checked:
@@ -294,7 +294,7 @@ async def handle_received(ctx: 'Sly1Context') -> None:
         if 10020030 <= item.ap_code <= 10020048:
             for name, data in bottles.items():
                 if data.ap_code == item.ap_code:
-                    bottle_level = name.replace(" Bottle(s)", "")
+                    bottle_level = name.replace(": Bottle(s)", "")
 
                     for episode_index, (world, levels) in enumerate(LEVELS.items()):
                         if bottle_level in levels:
@@ -326,10 +326,10 @@ def save_state(seed, new_state):
 
 def get_blueprint(episode: int) -> Optional[str]:
     blueprint_mapping = {
-        Sly1Episode.Tide_of_Terror: "ToT Blueprints",
-        Sly1Episode.Sunset_Snake_Eyes: "SSE Blueprints",
-        Sly1Episode.Vicious_Voodoo: "VV Blueprints",
-        Sly1Episode.Fire_in_the_Sky: "FitS Blueprints",
+        Sly1Episode.Tide_of_Terror: "Tide of Terror: Blueprints",
+        Sly1Episode.Sunset_Snake_Eyes: "Sunset Snake Eyes: Blueprints",
+        Sly1Episode.Vicious_Voodoo: "Vicious Voodoo: Blueprints",
+        Sly1Episode.Fire_in_the_Sky: "Fire in the Sky: Blueprints",
     }
     return blueprint_mapping.get(Sly1Episode(episode))
 

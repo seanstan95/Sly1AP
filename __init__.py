@@ -4,14 +4,14 @@ from collections import defaultdict
 from typing import Dict, Union, ClassVar, Any, Mapping
 from BaseClasses import MultiWorld, Item, ItemClassification, Tutorial
 from worlds.AutoWorld import World, CollectionState, WebWorld
-from worlds.sly1.Items import item_table, create_itempool, create_item, event_item_pairs, sly_episodes, sly_items, bottles, junk_items, ep_fix, lvl_to_ep
+from worlds.sly1.Items import item_table, create_itempool, create_item, event_item_pairs, sly_episodes, sly_items, bottles, junk_items, ep_to_lvl
 from worlds.sly1.Locations import (get_location_names, get_total_locations,
                                    did_avoid_early_bk, generate_bottle_locations,
                                    generate_minigame_locations, generate_key_caches,
-                                   lvl_names, turrets, races, murray_dangers, minigames)
+                                   loc_to_ep, minigames, lvl_lookup)
 from worlds.sly1.Options import Sly1Options
 from worlds.sly1.Regions import create_regions
-from worlds.sly1.Types import Sly1Item, EpisodeType, episode_type_to_name, episode_type_to_shortened_name
+from worlds.sly1.Types import Sly1Item, EpisodeType, episode_type_to_unlock
 from worlds.sly1.Rules import set_rules
 from worlds.LauncherComponents import (
     Component,
@@ -33,92 +33,73 @@ components.append(
 )
 
 def setup_item_groups(items) -> dict[str, set]:
-    # not quite as ugly as location groups (but still ugly). Would similarly be easier to deal with if item names were
-    #   formatted to allow for easier retrieval of level and/or episode names. Will try that after committing/pushing this
     item_groups = defaultdict(set)
-    for name in items:
-        if "Progressive" in name:
-            item_groups["Moves (Progressive)"].add(name)  # progressive moves
-            item_groups["Moves (All)"].add(name)  # all moves
-        if name in ["Coin Magnet", "Mine", "Fast", "Decoy", "Hacking"]:
-            item_groups["Moves (Non-Progressive)"].add(name)  # non-progressive moves
-            item_groups["Moves (All)"].add(name)  # all moves
-        if name in ["Charm", "1-Up"]:
-            item_groups["All Filler"].add(name)  # all filler
-        if name in ["Ice Physics Trap", "Speed Change Trap", "Ball Trap", "Invisibility Trap"]:
-            item_groups["All Traps"].add(name)  # all traps
+    for item in items:
+        if "Progressive" in item:
+            item_groups["Moves (Progressive)"].add(item)
+            item_groups["Moves (All)"].add(item)
+        if item in ["Coin Magnet", "Mine", "Fast", "Decoy", "Hacking"]:  # couldn't think of a good way to rename these for dynamic logic
+            item_groups["Moves (Non-Progressive)"].add(item)
+            item_groups["Moves (All)"].add(item)
+        if item in junk_items and "Trap" not in item:
+            item_groups["All Filler"].add(item)
+        if item in junk_items and "Trap" in item:
+            item_groups["All Traps"].add(item)
 
-        # Bottles/blueprints/keys/episode access items need episode information. Problem: access items spell out episode
-        #   names while bottles/blueprints/keys don't. special case time :) have to convert episode name to its abbreviation
-        for ep in ep_fix:  # check all episodes
-            if name == ep:  # find which one
-                item_groups["All Episode Access Items"].add(name)  # all episode access
-                item_groups[f"{ep_fix[ep]} (All)"].add(name)  # individual episode (All) groups
-                break
+        if item.find(":") == -1:  # all remaining items we care about will have a : in them
+            continue
+        ep_or_lvl, item_type = item.split(":")  # unknown at this stage if this is an episode or level item
 
-        if "Bottle" in name or "Blueprint" in name or "Key" in name:  # these 3 have same episode name format
-            for lvl in lvl_to_ep:  # cycle through all levels
-                if lvl in name:  # find which episode
-                    episode = lvl_to_ep[lvl]
-                    break
-
-            # generalizing as a loop to cut out some repetitive lines
-            for group in ["Bottle", "Blueprint", "Key"]:
-                if group in name:
-                    item_groups[f"All {group}s"].add(name)  # all bottles, all blueprints, all keys
-                    item_groups[f"{episode} (All)"].add(name)  # ToT all, SSE all, VV all, FitS all
-                    if "Bottle" in name:
-                        item_groups[f"{episode} Bottles"].add(name)  # ToT bottles, SSE bottles, VV bottles, FitS bottles
+        if ep_or_lvl in ep_to_lvl.keys():  # if true, this is an episode-based item
+            for group_type in ["Blueprint", "Key", "Episode Unlock"]:
+                if group_type in item_type:
+                    item_groups[f"{ep_or_lvl} (All)"].add(item)
+                    item_groups[f"All {group_type}s"].add(item)
+                    break  # small optimization to stop once found
+        else:  # if else, this is a bottle item (all level-based items are bottle items) and we must find which episode it belongs to
+            for episode in ep_to_lvl:  # could make this a direct lookup if another dict was made for level -> ep, but I didn't find that justified
+                if ep_or_lvl in ep_to_lvl[episode]:  # found the level in an episode's list
+                    item_groups[f"{episode} Bottles"].add(item)
+                    item_groups[f"{episode} (All)"].add(item)
+                    item_groups[f"All Bottles"].add(item)
+                    break  # small optimization to stop once found
     return item_groups
 
 def setup_location_groups(locations) -> dict[str, set]:
     location_groups = defaultdict(set)
-    location_groups["All Bosses"] = {"Eye of the Storm", "Last Call", "Deadly Dance", "Flame Fu!"}
+    location_groups["All Bosses"] = {"Eye of the Storm", "Last Call", "Deadly Dance", "Flame Fu!"}  # rest of loop is simpler if this is hardcoded here
 
-    # My 2 CS degrees are screaming at me for this O(n^4) mess...I am in agony
-    # I don't think this can be majorly improved without significantly cutting back on groups or adjusting location name
-    #   format to "Stealthy Approach: Key" for a programmatically-easier time retrieving level names.
-    # Without that, there's basically no avoiding layers of loops going over locations -> episodes -> levels -> types of level locations
-    # Getting even this form working required a rename of minigame level caches to be "Minigame Cache" instead of just "Cache"
-    #   because I couldn't get a logically-sound approach working without doing so.
-    # Will probably make a version with modified location name formatting next to see if it's justified.
-    for name in locations:  # all locations
-        for episode in lvl_names:  # needed for episode-based groups
-            lvls = lvl_names[episode]
-            for lvl in lvls:  # needed for level-based groups
-                if lvl in name:  # find which level this location belongs to
-                    if lvl not in ["Eye of the Storm", "Last Call", "Deadly Dance", "Flame Fu!"] and lvl not in minigames:
-                        location_groups[f"{lvl} (All)"].add(name)  # all in each level
-                    location_groups[f"{episode} (All)"].add(name)  # all level matches in name -> part of current episode
-                    if any(thing in name for thing in murray_dangers):
-                        location_groups["All Murray Danger Levels"].add(name)  # murray danger levels
-                    if any(thing in name for thing in races):
-                        location_groups["All Race Levels"].add(name)  # race levels
-                    if any(thing in name for thing in turrets):
-                        location_groups["All Turret Levels"].add(name)  # turret levels
-                    if lvl not in minigames:
-                        location_groups["All Platforming Levels"].add(name)  # platforming levels
+    # this is SO much better and more efficient now, at the cost of reformatting almost all location names. Worth it 100% imo
+    for loc in locations:
+        if loc.find(":") == -1:  # paris files and boss-related locations intentionally do not have a : and aren't in any groups
+            continue
 
-                    for group in ["Bottle", "Key", "Minigame Cache", "Vault", "Hourglass"]:  # not strictly needed, but generalizing this into a loop cuts out some repetitive lines
-                        if group in name:  # find which type of location this is (Bottle, Cache, etc.)
-                            # could remove some slight repetitiveness here, but I really just do not care at this point, it works
-                            if "Vault" in name:
-                                location_groups[f"{episode} Vaults"].add(name)  # episode vaults
-                                location_groups["All Vaults"].add(name)  # all vaults
+        # all locations (minus the ones skipped above) have format of "Level: Location Type" e.g. Stealthy Approach: Key or Treasure in the Depths: Minigame Cache #3
+        level, loc_type = loc.split(":")
+        episode = loc_to_ep[level]
 
-                            if "Hourglass" in name:
-                                location_groups[f"{episode} Hourglasses"].add(name)  # episode hourglasses
-                                location_groups["All Hourglasses"].add(name)  # all hourglasses
+        location_groups[f"{episode} (All)"].add(loc)  # everything in an episode
 
-                            if "Bottle" in name or "Key" in name or "Minigame Cache" in name:
-                                location_groups[f"{episode} {group}s"].add(name)  # per-episode bottles/keys/minigame caches
-                                location_groups[f"All {group}s"].add(name)  # all bottles/keys/minigame caches
+        # generalizing per-level, per-episode, and full-game groups for bottles, keys, minigame caches, vaults, and hourglasses
+        # doing this cuts out a ton of redundancy in lines of code because most groups are similar
+        def helper(single, plural):  # singular and plural form of the group names. All because hourglasses pluralizes weirdly
+            if single in loc_type:  # every location gets checked for if it's a bottle, key, etc. so only continue if there's a match
+                if single in ["Bottle", "Minigame Cache"] or (single == "Key" and level not in minigames):  # only do per-level key groups for non-minigames
+                    location_groups[f"{level} {plural}"].add(loc)
+                location_groups[f"{episode} {plural}"].add(loc)
+                location_groups[f"All {plural}"].add(loc)
 
-                                # English words aren't descriptive enough to capture how long it took to get this part working
-                                if "Key" in name and lvl in minigames:
-                                    continue  # no individual level key groups for minigame keys
-                                else:
-                                    location_groups[f"{lvl} {group}s"].add(name)  # per-level bottles/keys/minigame caches
+        for single in ["Bottle", "Key", "Minigame Cache", "Vault", "Hourglass"]:
+            plural = "Hourglasses" if single == "Hourglass" else single + "s"  # hourglass is the only one that can't be pluralized with just adding an s. I hate English
+            helper(single, plural)
+
+        for lvl_string, lvl_list in lvl_lookup.items():
+            if level in lvl_list:
+                location_groups[f"All {lvl_string} Levels"].add(loc)
+
+        if level not in minigames:  # minigame levels don't have enough diversity in locations to justify {level} (All) groups
+            location_groups["All Platforming Levels"].add(loc)
+            location_groups[f"{level} (All)"].add(loc)
     return location_groups
 
 class Sly1Web(WebWorld):
@@ -202,22 +183,22 @@ class Sly1World(World):
             return
 
         starting_episode = EpisodeType(self.options.StartingEpisode)
-        starting_episode_long = episode_type_to_name[starting_episode]
-        starting_episode_short = episode_type_to_shortened_name[starting_episode]
+        starting_episode_unlock = episode_type_to_unlock[starting_episode]
+        starting_episode_name = starting_episode_unlock.replace(": Episode Unlock", "")
 
         # Starting Episode - please clean this up oml
-        if starting_episode_long == "All":
+        if starting_episode_name == "All":
             for episode in sly_episodes.keys():
                 self.multiworld.push_precollected(self.create_item(episode))
         else:
-            self.multiworld.push_precollected(self.create_item(starting_episode_long))
+            self.multiworld.push_precollected(self.create_item(starting_episode_unlock))
 
         # Avoid Early BK
         if did_avoid_early_bk(self):
-            if starting_episode_long == "All":
-                starting_episode_short = episode_type_to_shortened_name[EpisodeType(random.randrange(1, 4))]
-                self.random_episode = starting_episode_short
-            self.multiworld.push_precollected(self.create_item(f'{starting_episode_short} Key'))
+            if starting_episode_name == "All":
+                starting_episode_name = episode_type_to_unlock[EpisodeType(random.randint(1, 4))].replace(": Episode Unlock", "")
+                self.random_episode = starting_episode_name
+            self.multiworld.push_precollected(self.create_item(f'{starting_episode_name}: Key'))
 
     def create_regions(self):
         create_regions(self)
