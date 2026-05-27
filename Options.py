@@ -216,7 +216,7 @@ class EnableTricks(OptionSet):
     """
     display_name = "Enable Tricks"
     default = []
-    valid_keys = ["tot_second_half_early", "tot_raleigh_early", "sse_second_half_early", "sse_muggshot_early"
+    valid_keys = ["tot_second_half_early", "tot_raleigh_early", "sse_second_half_early", "sse_muggshot_early",
                   "vv_second_half_early", "fits_second_half_early", "fits_panda_early", "unseen_foe_invis_skip"]
 
 @dataclass
